@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareerPilot | AI Career Mentor & Job Matcher</title>
+    <meta name="description" content="Level the playing field with CareerPilot: parse your resume, match with local opportunities, analyze skill gaps, and write custom cover letters.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Fonts & Style Link -->
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 1. Header Area -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-icon">🚀</span>
+                <h1 id="app-title">CareerPilot</h1>
+            </div>
+            <p class="app-subtitle">Leveling the playing field with an autonomous, multi-agent AI Career Coach</p>
+        </header>
+
+        <!-- 2. Main Content View -->
+        <main class="app-main">
+            <!-- Phase A: Upload Resume -->
+            <section id="upload-section" class="card glass">
+                <h2 class="section-title">Upload Your Resume</h2>
+                <p class="section-desc">Upload your PDF resume to extract skills, analyze matches, and get tailored application advice.</p>
+                
+                <div id="drop-zone" class="drop-zone">
+                    <input type="file" id="resume-file-input" accept=".pdf" class="file-input">
+                    <div class="drop-zone-content">
+                        <span class="upload-icon">📄</span>
+                        <p class="upload-text">Drag & drop your PDF resume here or <span class="highlight">browse files</span></p>
+                        <p class="file-info-text">Supports PDF format (Max 10MB)</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Phase B: Loading / Analyzing State -->
+            <section id="loading-section" class="card glass hidden">
+                <div class="loader-content">
+                    <div class="spinner"></div>
+                    <h2 id="loading-status">Analyzing Resume...</h2>
+                    <p id="loading-subtext">Our Resume Agent is extracting key skills and experiences.</p>
+                </div>
+            </section>
+
+            <!-- Phase C: Results Layout (Dashboard) -->
+            <div id="dashboard-layout" class="dashboard-layout hidden">
+                <!-- Left Column: User Profile Summary -->
+                <aside class="dashboard-sidebar card glass">
+                    <div class="sidebar-header">
+                        <div class="profile-avatar">👨‍💻</div>
+                        <h2 id="candidate-name" class="candidate-name">Candidate Name</h2>
+                        <span class="badge success">Parsed Profile</span>
+                    </div>
+                    
+                    <div class="sidebar-section">
+                        <h3>Key Skills Extracted</h3>
+                        <div id="parsed-skills-container" class="skills-grid">
+                            <!-- Dynamically loaded skills -->
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>Work Experience</h3>
+                        <div id="parsed-experience-list" class="experience-list">
+                            <!-- Dynamically loaded experience cards -->
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Right Column: Ranked Job Openings -->
+                <section class="dashboard-main card glass">
+                    <h2 class="section-title">Recommended Job Openings</h2>
+                    <p class="section-desc">Jobs ranked in real-time by compatibility and skills alignment.</p>
+                    
+                    <div id="jobs-container" class="jobs-list">
+                        <!-- Dynamically loaded jobs -->
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Slide-out Drawer Panel: Job Analysis & Cover Letter -->
+        <div id="details-drawer" class="drawer hidden">
+            <div class="drawer-overlay" id="drawer-overlay"></div>
+            <div class="drawer-content card glass">
+                <button id="close-drawer-btn" class="close-btn">&times;</button>
+                
+                <div class="drawer-body">
+                    <div class="job-detail-header">
+                        <span id="drawer-job-company" class="job-company">Company Name</span>
+                        <h2 id="drawer-job-title" class="job-title">Job Title</h2>
+                        <div class="score-badge-container">
+                            <span class="score-label">Compatibility Match</span>
+                            <span id="drawer-match-score" class="score-badge">95%</span>
+                        </div>
+                    </div>
+
+                    <div class="drawer-section">
+                        <h3>Fit Analysis</h3>
+                        <p id="drawer-fit-explanation" class="fit-explanation">Analyzing job alignment...</p>
+                    </div>
+
+                    <div class="drawer-section split-skills">
+                        <div>
+                            <h4 class="matching-header">Matching Skills</h4>
+                            <div id="drawer-matching-skills" class="skills-grid">
+                                <!-- Green tags -->
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="missing-header">Missing Skills / Gap</h4>
+                            <div id="drawer-missing-skills" class="skills-grid">
+                                <!-- Red tags -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="drawer-section">
+                        <h3>Actionable Resume Advice</h3>
+                        <ul id="drawer-resume-advice" class="advice-list">
+                            <!-- Bullet points -->
+                        </ul>
+                    </div>
+
+                    <div class="drawer-section divider"></div>
+
+                    <div class="drawer-section letter-section">
+                        <div class="letter-header">
+                            <h3>Customized Cover Letter</h3>
+                            <button id="generate-letter-btn" class="btn primary">Tailor Cover Letter</button>
+                        </div>
+                        
+                        <div id="letter-loading-container" class="letter-loader hidden">
+                            <div class="spinner mini"></div>
+                            <span>Writing letter tailored to your profile...</span>
+                        </div>
+
+                        <div id="letter-content-container" class="letter-content hidden">
+                            <textarea id="cover-letter-textarea" class="letter-textarea" readonly></textarea>
+                            <div class="letter-actions">
+                                <button id="copy-letter-btn" class="btn secondary">Copy to Clipboard</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Area -->
+        <footer class="app-footer">
+            <p>&copy; 2026 CareerPilot. Open-Source AI Capstone Project.</p>
+        </footer>
+    </div>
+
+    <!-- Script Import -->
+    <script src="index.js"></script>
+</body>
+</html>
