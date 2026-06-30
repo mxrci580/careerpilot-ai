@@ -385,10 +385,7 @@ function setupUploadHandlers() {
         }
     });
 
-    // File selected trigger via browse click
-    dropZone.addEventListener('click', () => {
-        fileInput.click();
-    });
+
 
     fileInput.addEventListener('change', () => {
         if (fileInput.files.length > 0) {
