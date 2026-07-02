@@ -6,6 +6,8 @@ let currentProfile = null;
 let rawJobsList = [];
 let jobMatchResults = [];
 let selectedJob = null;
+let currentTab = 'all'; // 'all' or 'saved'
+let savedJobsList = [];
 
 // DOM Elements Lookup
 const dropZone = document.getElementById('drop-zone');
@@ -14,6 +16,7 @@ const uploadSection = document.getElementById('upload-section');
 const loadingSection = document.getElementById('loading-section');
 const loadingStatus = document.getElementById('loading-status');
 const loadingSubtext = document.getElementById('loading-subtext');
+const progressBarFill = document.getElementById('progress-bar-fill');
 const dashboardLayout = document.getElementById('dashboard-layout');
 
 // Sidebar DOM Elements
@@ -21,6 +24,20 @@ const candidateName = document.getElementById('candidate-name');
 const parsedSkillsContainer = document.getElementById('parsed-skills-container');
 const parsedExperienceList = document.getElementById('parsed-experience-list');
 const jobsContainer = document.getElementById('jobs-container');
+
+// Tab and Action selectors
+const syncJobsBtn = document.getElementById('sync-jobs-btn');
+const tabAllJobs = document.getElementById('tab-all-jobs');
+const tabSavedJobs = document.getElementById('tab-saved-jobs');
+const bookmarkJobBtn = document.getElementById('bookmark-job-btn');
+
+// Filter DOM Elements
+const filterRole = document.getElementById('filter-role');
+const filterExperience = document.getElementById('filter-experience');
+const filterLocation = document.getElementById('filter-location');
+const filterRemote = document.getElementById('filter-remote');
+const applyFiltersBtn = document.getElementById('apply-filters-btn');
+const resetFiltersBtn = document.getElementById('reset-filters-btn');
 
 // Drawer DOM Elements
 const detailsDrawer = document.getElementById('details-drawer');
@@ -47,6 +64,7 @@ const copyLetterBtn = document.getElementById('copy-letter-btn');
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Initial Job Fetch (so the page is not empty)
     fetchInitialJobs();
+    fetchBookmarks();
     
     // 2. Setup File Upload Event Listeners
     setupUploadHandlers();
@@ -54,10 +72,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Setup Drawer Actions
     closeDrawerBtn.addEventListener('click', closeDrawer);
     drawerOverlay.addEventListener('click', closeDrawer);
+    bookmarkJobBtn.addEventListener('click', toggleBookmarkSelectedJob);
     
     // 4. Setup Cover Letter Actions
     generateLetterBtn.addEventListener('click', triggerCoverLetterGeneration);
     copyLetterBtn.addEventListener('click', copyCoverLetterToClipboard);
+
+    // 5. Setup Sync and Tab Actions
+    syncJobsBtn.addEventListener('click', triggerJobSync);
+    
+    tabAllJobs.addEventListener('click', () => {
+        if (currentTab === 'all') return;
+        currentTab = 'all';
+        tabAllJobs.classList.add('active');
+        tabAllJobs.style.background = 'var(--primary-color)';
+        tabAllJobs.style.color = 'white';
+        tabSavedJobs.classList.remove('active');
+        tabSavedJobs.style.background = 'transparent';
+        tabSavedJobs.style.color = 'var(--text-muted)';
+        displayJobsFeed();
+    });
+
+    tabSavedJobs.addEventListener('click', async () => {
+        if (currentTab === 'saved') return;
+        currentTab = 'saved';
+        tabSavedJobs.classList.add('active');
+        tabSavedJobs.style.background = 'var(--primary-color)';
+        tabSavedJobs.style.color = 'white';
+        tabAllJobs.classList.remove('active');
+        tabAllJobs.style.background = 'transparent';
+        tabAllJobs.style.color = 'var(--text-muted)';
+        await fetchBookmarks();
+        displayJobsFeed();
+    });
+
+    // 6. Setup Filter Actions
+    applyFiltersBtn.addEventListener('click', applyJobFilters);
+    resetFiltersBtn.addEventListener('click', resetJobFilters);
 });
 
 // ==========================================================================
@@ -82,14 +133,18 @@ async function uploadResumeFile(file) {
     // Show Loading Phase 1
     uploadSection.classList.add('hidden');
     loadingSection.classList.remove('hidden');
+    
+    // Animate progress bar start
+    progressBarFill.style.width = '10%';
     loadingStatus.textContent = "Extracting Resume Content...";
-    loadingSubtext.textContent = "Our Resume Agent is converting your PDF into structured data models.";
+    loadingSubtext.textContent = "Converting your PDF into plain text lines.";
 
     const formData = new FormData();
     formData.append('file', file);
 
     try {
         // Run Agent 1: Parse PDF
+        progressBarFill.style.width = '25%';
         const res = await fetch(`${API_BASE}/api/parse-resume`, {
             method: 'POST',
             body: formData
@@ -98,14 +153,17 @@ async function uploadResumeFile(file) {
             const err = await res.json();
             throw new Error(err.detail || "Failed parsing resume");
         }
+        
+        progressBarFill.style.width = '45%';
         currentProfile = await res.json();
         
         // Update Sidebar View with parsed profile
         updateSidebar(currentProfile);
         
         // Transition to Loading Phase 2
+        progressBarFill.style.width = '55%';
         loadingStatus.textContent = "Matching Jobs...";
-        loadingSubtext.textContent = "Comparing your skills and experience against our jobs database.";
+        loadingSubtext.textContent = "Comparing your profile against SQLite job descriptions.";
         
         // Run Agent 2: Evaluate & Re-rank
         await evaluateAndRankJobs(currentProfile);
@@ -121,6 +179,7 @@ async function uploadResumeFile(file) {
 
 async function evaluateAndRankJobs(profile) {
     try {
+        progressBarFill.style.width = '75%';
         const res = await fetch(`${API_BASE}/api/match-jobs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -128,11 +187,16 @@ async function evaluateAndRankJobs(profile) {
         });
         if (!res.ok) throw new Error("Matching request failed");
         
+        progressBarFill.style.width = '90%';
         const results = await res.json();
         jobMatchResults = results.matches;
         
         // Render evaluated, sorted jobs on screen
-        renderJobs(rawJobsList, true);
+        displayJobsFeed();
+        
+        // Set to 100% and delay slightly for smooth satisfaction feel
+        progressBarFill.style.width = '100%';
+        await new Promise(resolve => setTimeout(resolve, 600));
         
         // Transition to Dashboard view
         loadingSection.classList.add('hidden');
@@ -293,6 +357,18 @@ function openJobDrawer(job, isEvaluated) {
     letterContentContainer.classList.add('hidden');
     coverLetterTextarea.value = "";
     
+    // Set Bookmark Button visual state
+    const isBookmarked = savedJobsList.some(sj => sj.id === job.id);
+    if (isBookmarked) {
+        bookmarkJobBtn.textContent = "Saved ✓";
+        bookmarkJobBtn.style.background = 'var(--color-success)';
+        bookmarkJobBtn.style.borderColor = 'var(--color-success)';
+    } else {
+        bookmarkJobBtn.textContent = "⭐ Save Job";
+        bookmarkJobBtn.style.background = 'transparent';
+        bookmarkJobBtn.style.borderColor = 'var(--border-color)';
+    }
+    
     if (isEvaluated && job.evaluation) {
         const evalData = job.evaluation;
         
@@ -413,4 +489,153 @@ function copyCoverLetterToClipboard() {
             console.error("Clipboard write failed:", err);
             alert("Failed to copy letter. Please select and copy manually.");
         });
+}
+
+// ==========================================================================
+// NEW BOOKMARK AND SYNC HELPERS
+// ==========================================================================
+
+function displayJobsFeed() {
+    const listToRender = currentTab === 'all' ? rawJobsList : savedJobsList;
+    const isEvaluated = currentProfile !== null;
+    renderJobs(listToRender, isEvaluated);
+}
+
+async function fetchBookmarks() {
+    try {
+        const res = await fetch(`${API_BASE}/api/bookmarks`);
+        if (res.ok) {
+            savedJobsList = await res.json();
+        }
+    } catch (e) {
+        console.error("Error fetching bookmarks:", e);
+    }
+}
+
+async function toggleBookmarkSelectedJob() {
+    if (!selectedJob) return;
+    
+    const isAlreadyBookmarked = savedJobsList.some(sj => sj.id === selectedJob.id);
+    if (isAlreadyBookmarked) {
+        return;
+    }
+    
+    try {
+        bookmarkJobBtn.disabled = true;
+        const res = await fetch(`${API_BASE}/api/bookmarks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: selectedJob.id })
+        });
+        
+        if (res.ok) {
+            bookmarkJobBtn.textContent = "Saved ✓";
+            bookmarkJobBtn.style.background = 'var(--color-success)';
+            bookmarkJobBtn.style.borderColor = 'var(--color-success)';
+            
+            await fetchBookmarks();
+            
+            if (currentTab === 'saved') {
+                displayJobsFeed();
+            }
+        }
+    } catch (e) {
+        console.error("Failed to bookmark job:", e);
+        alert("Failed to bookmark job.");
+    } finally {
+        bookmarkJobBtn.disabled = false;
+    }
+}
+
+async function triggerJobSync() {
+    syncJobsBtn.disabled = true;
+    const originalText = syncJobsBtn.textContent;
+    syncJobsBtn.textContent = "⚡ Syncing...";
+    
+    try {
+        const res = await fetch(`${API_BASE}/api/jobs/fetch`, { method: 'POST' });
+        if (!res.ok) throw new Error("Sync request failed");
+        
+        const result = await res.json();
+        alert(`Successfully synced! Added ${result.new_jobs_added} new job listings from Remotive API.`);
+        
+        // Refresh local listings
+        const jobsRes = await fetch(`${API_BASE}/api/jobs`);
+        if (jobsRes.ok) {
+            rawJobsList = await jobsRes.json();
+        }
+        
+        // Re-evaluate if profile is present
+        if (currentProfile) {
+            evaluateAndRankJobs(currentProfile);
+        } else {
+            displayJobsFeed();
+        }
+    } catch (e) {
+        console.error("Failed syncing jobs:", e);
+        alert("Failed to sync live jobs from Remotive API.");
+    } finally {
+        syncJobsBtn.disabled = false;
+        syncJobsBtn.textContent = originalText;
+    }
+}
+
+async function applyJobFilters() {
+    applyFiltersBtn.disabled = true;
+    const originalText = applyFiltersBtn.textContent;
+    applyFiltersBtn.textContent = "Applying...";
+    
+    try {
+        const params = new URLSearchParams();
+        if (filterRole.value.trim()) params.append('role', filterRole.value.trim());
+        if (filterExperience.value) params.append('experience', filterExperience.value);
+        if (filterLocation.value.trim()) params.append('location', filterLocation.value.trim());
+        if (filterRemote.value) params.append('remote_pref', filterRemote.value);
+        
+        const res = await fetch(`${API_BASE}/api/jobs?${params.toString()}`);
+        if (!res.ok) throw new Error("Filtering request failed");
+        
+        rawJobsList = await res.json();
+        
+        // If resume profile is active, re-rank matching scores on the filtered subset!
+        if (currentProfile) {
+            await evaluateAndRankJobs(currentProfile);
+        } else {
+            displayJobsFeed();
+        }
+    } catch (e) {
+        console.error("Error applying filters:", e);
+        alert("Failed to apply filters.");
+    } finally {
+        applyFiltersBtn.disabled = false;
+        applyFiltersBtn.textContent = originalText;
+    }
+}
+
+async function resetJobFilters() {
+    // Clear inputs
+    filterRole.value = "";
+    filterExperience.value = "";
+    filterLocation.value = "";
+    filterRemote.value = "";
+    
+    resetFiltersBtn.disabled = true;
+    try {
+        // Fetch all jobs
+        const res = await fetch(`${API_BASE}/api/jobs`);
+        if (res.ok) {
+            rawJobsList = await res.json();
+        }
+        
+        // Re-evaluate if profile is present
+        if (currentProfile) {
+            await evaluateAndRankJobs(currentProfile);
+        } else {
+            displayJobsFeed();
+        }
+    } catch (e) {
+        console.error("Error resetting filters:", e);
+    } finally {
+        resetFiltersBtn.disabled = false;
+    }
 }

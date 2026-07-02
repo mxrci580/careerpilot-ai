@@ -3,6 +3,14 @@ from google.adk import Agent, Runner
 from google.adk.apps.app import App
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+# Reusable exponential backoff retry decorator for Google API calls (retries on 503/429)
+gemini_retry = retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=2, min=4, max=15),
+    reraise=True
+)
 
 from app.schemas import UserProfile, JobMatchResultsList
 
@@ -15,6 +23,7 @@ PARSER_INSTRUCTION = (
     "UserProfile JSON format. Do not add any extra text outside the JSON."
 )
 
+@gemini_retry
 async def parse_resume(raw_resume_text: str) -> UserProfile:
     """Takes raw resume text and parses it into a structured UserProfile object."""
     agent = Agent(
@@ -63,6 +72,7 @@ MATCHER_INSTRUCTION = (
     "Output your evaluation exactly in the JobMatchResultsList JSON format."
 )
 
+@gemini_retry
 async def match_jobs(profile: UserProfile, jobs_list_str: str) -> JobMatchResultsList:
     """Evaluates and ranks a list of jobs against the user's profile."""
     agent = Agent(
@@ -116,6 +126,7 @@ WRITER_INSTRUCTION = (
     "- Do not output JSON. Output a clean, ready-to-use cover letter text document."
 )
 
+@gemini_retry
 async def generate_cover_letter(profile: UserProfile, job_title: str, company: str, job_desc: str) -> str:
     """Generates a tailored cover letter for a specific job description."""
     agent = Agent(

@@ -1,4 +1,8 @@
 import io
+from typing import Optional
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -6,9 +10,10 @@ from pydantic import BaseModel
 import pypdf
 from sqlalchemy import select
 
-from app.db import init_db, search_jobs_in_db, async_session, JobModel
+from app.db import init_db, search_jobs_in_db, async_session, JobModel, add_bookmark_to_db, get_bookmarked_jobs_from_db
 from app.schemas import UserProfile, JobMatchResultsList
 from app.pipeline import parse_resume, match_jobs, generate_cover_letter
+from app.fetcher import fetch_and_store_jobs
 
 # 1. Initialize FastAPI Application
 app = FastAPI(
@@ -105,11 +110,65 @@ async def api_cover_letter(req: CoverLetterRequest):
 
 
 @app.get("/api/jobs")
-async def api_get_jobs():
-    """Returns a list of all job postings stored in the SQLite database."""
+async def api_get_jobs(
+    role: Optional[str] = None,
+    experience: Optional[str] = None,
+    location: Optional[str] = None,
+    remote_pref: Optional[str] = None
+):
+    """Returns a list of job postings stored in the SQLite database, filtered by criteria."""
     try:
         async with async_session() as session:
             stmt = select(JobModel)
+            
+            # Apply filters dynamically
+            if role:
+                stmt = stmt.where(
+                    JobModel.title.icontains(role) | 
+                    JobModel.description.icontains(role) |
+                    JobModel.requirements_json.icontains(role)
+                )
+            if location:
+                stmt = stmt.where(JobModel.location.icontains(location))
+                
+            if remote_pref:
+                if remote_pref == "remote":
+                    stmt = stmt.where(
+                        JobModel.location.icontains("remote") | 
+                        JobModel.description.icontains("remote")
+                    )
+                elif remote_pref == "onsite_hybrid":
+                    stmt = stmt.where(~JobModel.location.icontains("remote"))
+                    
+            if experience:
+                if experience == "junior":
+                    stmt = stmt.where(
+                        JobModel.title.icontains("junior") | 
+                        JobModel.title.icontains("intern") | 
+                        JobModel.title.icontains("associate") |
+                        JobModel.description.icontains("junior") |
+                        JobModel.description.icontains("intern")
+                    )
+                elif experience == "senior":
+                    stmt = stmt.where(
+                        JobModel.title.icontains("senior") | 
+                        JobModel.title.icontains("lead") | 
+                        JobModel.title.icontains("staff") | 
+                        JobModel.title.icontains("principal") |
+                        JobModel.description.icontains("senior") |
+                        JobModel.description.icontains("lead")
+                    )
+                elif experience == "mid":
+                    # Mid-level: Exclude junior/intern and senior/lead/staff/principal
+                    stmt = stmt.where(
+                        ~JobModel.title.icontains("junior") &
+                        ~JobModel.title.icontains("intern") &
+                        ~JobModel.title.icontains("senior") &
+                        ~JobModel.title.icontains("lead") &
+                        ~JobModel.title.icontains("staff") &
+                        ~JobModel.title.icontains("principal")
+                    )
+                    
             result = await session.execute(stmt)
             jobs = result.scalars().all()
             
@@ -126,6 +185,54 @@ async def api_get_jobs():
             ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch jobs: {str(e)}")
+
+
+@app.post("/api/jobs/fetch")
+async def api_fetch_live_jobs():
+    """Fetches real remote tech jobs from Remotive API and saves them to the database."""
+    try:
+        count = await fetch_and_store_jobs()
+        return {"status": "success", "new_jobs_added": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Job ingestion failed: {str(e)}")
+
+
+# 4.5 Bookmarking API routes
+class BookmarkCreate(BaseModel):
+    job_id: int
+
+
+@app.post("/api/bookmarks")
+async def api_add_bookmark(req: BookmarkCreate):
+    """Bookmarks a job listing for the default user."""
+    try:
+        success = await add_bookmark_to_db(user_id="default_user", job_id=req.job_id)
+        if not success:
+            return {"status": "already_bookmarked", "message": "Job is already bookmarked."}
+        return {"status": "success", "message": "Job bookmarked successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to bookmark job: {str(e)}")
+
+
+@app.get("/api/bookmarks")
+async def api_get_bookmarks():
+    """Returns a list of all jobs bookmarked by the default user."""
+    try:
+        jobs = await get_bookmarked_jobs_from_db(user_id="default_user")
+        return [
+            {
+                "id": j.id,
+                "title": j.title,
+                "company": j.company,
+                "location": j.location,
+                "salary_range": j.salary_range,
+                "description": j.description,
+                "requirements": j.requirements
+            } for j in jobs
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch bookmarks: {str(e)}")
+
 
 # 5. Serve static files for the frontend UI
 app.mount("/", StaticFiles(directory="ui", html=True), name="ui")

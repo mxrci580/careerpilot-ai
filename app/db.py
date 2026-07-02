@@ -1,6 +1,6 @@
 import json
 from typing import List, Optional
-from sqlalchemy import String, Text, select
+from sqlalchemy import String, Text, select, UniqueConstraint, ForeignKey
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -36,6 +36,18 @@ class JobModel(Base):
             return json.loads(self.requirements_json)
         except Exception:
             return []
+
+# Define the Bookmarks Table Model
+class BookmarkModel(Base):
+    __tablename__ = "bookmarks"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'job_id', name='uix_user_job'),
+    )
 
 # 4. Mock job listings to seed our database
 MOCK_JOBS = [
@@ -153,3 +165,37 @@ async def search_jobs_in_db(query: str, location: Optional[str] = None) -> str:
                 f"  Requirements: [{reqs_str}]\n"
             )
         return "\n".join(output)
+
+# ==========================================
+# BOOKMARK HELPERS
+# ==========================================
+
+async def add_bookmark_to_db(user_id: str, job_id: int) -> bool:
+    """Adds a job to the user's bookmarks list in SQLite. Returns True if added, False if duplicate."""
+    async with async_session() as session:
+        # Check if already exists to prevent integrity errors
+        stmt = select(BookmarkModel).where(
+            BookmarkModel.user_id == user_id,
+            BookmarkModel.job_id == job_id
+        )
+        result = await session.execute(stmt)
+        existing = result.scalars().first()
+        
+        if existing:
+            return False
+            
+        bookmark = BookmarkModel(user_id=user_id, job_id=job_id)
+        session.add(bookmark)
+        await session.commit()
+        return True
+
+async def get_bookmarked_jobs_from_db(user_id: str) -> List[JobModel]:
+    """Retrieves all jobs bookmarked by the user."""
+    async with async_session() as session:
+        stmt = (
+            select(JobModel)
+            .join(BookmarkModel, JobModel.id == BookmarkModel.job_id)
+            .where(BookmarkModel.user_id == user_id)
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())

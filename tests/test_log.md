@@ -127,3 +127,23 @@ This log tracks the functional and behavioral tests executed during the developm
 * **Expected Behavior**: FastAPI serves the index.html from `/ui` folder automatically on root query.
 * **Actual Output**: Serves the index.html file containing CareerPilot | AI Career Mentor & Job Matcher.
 * **Status**: ✅ **PASSED**
+
+---
+
+### 9. Real-Time Job Ingestion (Lesson 10)
+* **Date**: 2026-06-30
+* **Component**: Live Ingestion (`app/fetcher.py` & `/api/jobs/fetch`)
+* **Input**: `POST http://127.0.0.1:8000/api/jobs/fetch`
+* **Expected Behavior**: Connects to Remotive API, cleans HTML descriptions, serializes tags, and inserts active developer listings without duplicates.
+* **Actual Output**: Clean insertion of 33 live software engineer jobs, bringing total database count to 37.
+* **Status**: ✅ **PASSED**
+
+---
+
+### 10. Job Bookmarking & Unique Constraints (Lesson 10)
+* **Date**: 2026-06-30
+* **Component**: Database Bookmark Table (`app/db.py` & `/api/bookmarks`)
+* **Input**: `POST /api/bookmarks` (job_id: 2) twice
+* **Expected Behavior**: First insert creates the bookmark; second insert hits the composite unique constraint and returns already_bookmarked state.
+* **Actual Output**: Success status on first call, already_bookmarked on second call. Bookmarks retrieved cleanly via GET.
+* **Status**: ✅ **PASSED**

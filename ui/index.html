@@ -43,11 +43,16 @@
             </section>
 
             <!-- Phase B: Loading / Analyzing State -->
-            <section id="loading-section" class="card glass hidden">
-                <div class="loader-content">
-                    <div class="spinner"></div>
-                    <h2 id="loading-status">Analyzing Resume...</h2>
-                    <p id="loading-subtext">Our Resume Agent is extracting key skills and experiences.</p>
+            <section id="loading-section" class="card glass hidden" style="text-align: center;">
+                <div class="loader-content" style="max-width: 450px; margin: 0 auto; padding: 2rem;">
+                    <div class="spinner" style="margin: 0 auto 1.5rem auto;"></div>
+                    <h2 id="loading-status" style="margin-bottom: 0.5rem; font-size: 1.5rem;">Analyzing Resume...</h2>
+                    <p id="loading-subtext" style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">Our Resume Agent is extracting key skills and experiences.</p>
+                    
+                    <!-- Visual Progress Bar -->
+                    <div class="progress-bar-container" style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.03); margin-top: 1rem;">
+                        <div id="progress-bar-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); border-radius: 10px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                    </div>
                 </div>
             </section>
 
@@ -78,8 +83,52 @@
 
                 <!-- Right Column: Ranked Job Openings -->
                 <section class="dashboard-main card glass">
-                    <h2 class="section-title">Recommended Job Openings</h2>
-                    <p class="section-desc">Jobs ranked in real-time by compatibility and skills alignment.</p>
+                    <div class="jobs-header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 class="section-title" style="margin-bottom: 0.25rem; font-size: 1.5rem;">Recommended Job Openings</h2>
+                            <p class="section-desc" style="margin-bottom: 0;">Jobs ranked in real-time by compatibility and skills alignment.</p>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                            <button id="sync-jobs-btn" class="btn secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 500; border-radius: 8px;">⚡ Sync Live Jobs</button>
+                            <div class="tab-toggle-container" style="background: rgba(255,255,255,0.05); padding: 0.25rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex;">
+                                <button id="tab-all-jobs" class="tab-btn active" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: none; background: var(--primary-color); color: white; cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: all 0.2s;">All Jobs</button>
+                                <button id="tab-saved-jobs" class="tab-btn" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: all 0.2s;">Saved Jobs</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Job Preference Filter Panel -->
+                    <div class="filter-panel" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: flex-end;">
+                        <div class="filter-group" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Job Role / Keyword</label>
+                            <input type="text" id="filter-role" placeholder="e.g. Python, React, AI" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-color); padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; outline: none;">
+                        </div>
+                        <div class="filter-group" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Experience Level</label>
+                            <select id="filter-experience" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-color); padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; outline: none;">
+                                <option value="">Any Experience</option>
+                                <option value="junior">Junior (0-2 yrs)</option>
+                                <option value="mid">Mid-Level (3-5 yrs)</option>
+                                <option value="senior">Senior (5+ yrs)</option>
+                            </select>
+                        </div>
+                        <div class="filter-group" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Location</label>
+                            <input type="text" id="filter-location" placeholder="e.g. San Francisco, London" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-color); padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; outline: none;">
+                        </div>
+                        <div class="filter-group" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Work Preference</label>
+                            <select id="filter-remote" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-color); padding: 0.5rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; outline: none;">
+                                <option value="">Any Preference</option>
+                                <option value="remote">Remote / WFH</option>
+                                <option value="onsite_hybrid">On-site / Hybrid</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; grid-column: span 1;">
+                            <button id="apply-filters-btn" class="btn primary" style="padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px; flex-grow: 1; height: 35px;">Apply Filters</button>
+                            <button id="reset-filters-btn" class="btn secondary" style="padding: 0.5rem; font-size: 0.85rem; border-radius: 6px; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="Reset filters">🔄</button>
+                        </div>
+                    </div>
                     
                     <div id="jobs-container" class="jobs-list">
                         <!-- Dynamically loaded jobs -->
@@ -95,9 +144,10 @@
                 <button id="close-drawer-btn" class="close-btn">&times;</button>
                 
                 <div class="drawer-body">
-                    <div class="job-detail-header">
+                    <div class="job-detail-header" style="position: relative;">
                         <span id="drawer-job-company" class="job-company">Company Name</span>
-                        <h2 id="drawer-job-title" class="job-title">Job Title</h2>
+                        <h2 id="drawer-job-title" class="job-title" style="padding-right: 120px;">Job Title</h2>
+                        <button id="bookmark-job-btn" class="btn secondary" style="position: absolute; top: 0; right: 0; padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 8px; transition: all 0.2s;">⭐ Save Job</button>
                         <div class="score-badge-container">
                             <span class="score-label">Compatibility Match</span>
                             <span id="drawer-match-score" class="score-badge">95%</span>
