@@ -1,118 +1,477 @@
-# CareerPilot: An Intelligent AI Career Coach for Equalizing Job Opportunities 🚀
+# CareerPilot AI: An Intelligent Multi-Agent Career Coach for Equalizing Job Opportunities 🚀
 
-**Track**: Agents for Good  
-**Subtitle**: Empowering job-seekers with an autonomous, multi-agent assistant for resume intelligence, job retrieval, and application tailoring.
+**Track:** Agents for Good
 
----
-
-## 1. Core Concept & Value (Rubric Category: Concept & Value - 10 pts)
-
-### Relevance to the "Agents for Good" Track
-The modern job application process is unequal. Large corporations use automated Applicant Tracking Systems (ATS) to filter out candidates, while candidates spend hundreds of hours manually searching portals and writing generic cover letters. This process favors applicants with access to professional career coaches, expensive resume editors, and pre-existing industry networks.
-
-**CareerPilot** acts as a free, high-quality, personalized AI Career Coach. It levels the playing field by helping applicants:
-1. **Parse & Extract**: Extract skills and experience from a PDF resume into a standardized profile.
-2. **Retrieve Live Jobs**: Fetch real-time openings from the Remotive API keylessly and query local SQLite databases.
-3. **Analyze Alignment**: Compare their skills against job requirements to calculate compatibility scores ($0-100\%$) and map skill gaps.
-4. **Tailor Applications**: Re-frame accomplishments and generate custom cover letters targeting specific roles without fabricating details.
-
-By automating these processes, CareerPilot makes professional career coaching accessible to everyone, regardless of background or financial means.
-
-### The Meaningful Use of Agents
-In CareerPilot, agents are **active, stateful decision-makers** equipped with custom database search tools, strict output schemas, and API connectors. They hold context (memory) across conversational turns, decide when to query databases, and execute structured parsing tasks, acting as autonomous units that coordinate to help the user.
+**Subtitle:** Empowering job seekers with an autonomous multi-agent AI assistant for resume intelligence, unified job discovery, skill-gap analysis, and personalized application support.
 
 ---
 
-## 2. Multi-Agent Architecture (Rubric Category: YouTube & Writeup - 10 pts)
+# 1. Core Concept & Value
 
-### Why Agents for this Problem?
-A single, standard LLM prompt cannot solve the job matching problem. The reasoning required is too complex:
-* A standard LLM lacks access to databases or local files.
-* Loading all jobs and resumes into a single context (stuffer prompts) exceeds reasoning limits, increases costs, and leads to hallucinations.
+**Rubric Category:** Concept & Value (10 pts)
 
-Agents solve this by wrapping the LLM with **Tools** (to query databases) and **Memory** (to persist conversation states).
+## Problem Statement
 
-### The Sequential Multi-Agent Pipeline (The "Chain" Pattern)
-To ensure maximum speed, lower token costs, and high accuracy, CareerPilot utilizes three specialized agents in sequence, adhering to the **Single Responsibility Principle**:
+Finding the right job today is fragmented, repetitive, and often discouraging.
+
+Candidates spend hours searching across multiple job platforms, optimizing resumes for Applicant Tracking Systems (ATS), tailoring cover letters, and trying to determine whether they are actually qualified for a role. Meanwhile, applicants with access to professional career coaches, premium resume services, or strong industry networks gain a significant advantage.
+
+CareerPilot AI was built to bridge this gap.
+
+It acts as a free, intelligent AI Career Coach that combines job discovery, resume analysis, and application assistance into one seamless experience, making professional career guidance accessible to everyone.
+
+---
+
+## What CareerPilot AI Does
+
+CareerPilot AI assists job seekers throughout the application process by:
+
+### 📄 Resume Intelligence
+
+- Extracts skills, education, experience, certifications, and projects from PDF resumes.
+- Converts unstructured resumes into structured candidate profiles.
+
+### 🌐 Unified Job Search
+
+Instead of searching multiple websites individually, CareerPilot AI aggregates job opportunities into one platform.
+
+Current providers include:
+
+- Remotive
+- Local SQLite Job Database
+
+The architecture is provider-based and designed to support additional providers such as:
+
+- Google Jobs
+- Greenhouse
+- LinkedIn
+- Adzuna
+- SerpAPI
+
+This eliminates repetitive searching across multiple job portals.
+
+---
+
+### 🧠 Intelligent Query Understanding
+
+CareerPilot AI understands what users actually mean instead of relying on exact keyword matches.
+
+Examples include:
+
+- Bangalore ↔ Bengaluru
+- SDE ↔ Software Engineer
+- Developer ↔ Software Developer
+- ML Engineer ↔ Machine Learning Engineer
+
+Through normalization, synonym mapping, and fuzzy matching, CareerPilot AI returns significantly more relevant job results.
+
+---
+
+### 🎯 AI Job Matching
+
+CareerPilot AI compares the candidate profile with job descriptions to:
+
+- Calculate compatibility scores (0–100%)
+- Highlight matching skills
+- Identify missing skills
+- Explain why a job is recommended
+
+---
+
+### 📊 Skill Gap Analysis
+
+Rather than simply saying "You are not qualified,"
+
+CareerPilot AI identifies:
+
+- Missing technologies
+- Required certifications
+- Experience gaps
+- Resume improvement suggestions
+
+giving users an actionable roadmap toward their desired role.
+
+---
+
+### ✍️ Personalized Application Generation
+
+CareerPilot AI generates:
+
+- ATS-friendly cover letters
+- Resume improvement suggestions
+
+while ensuring no fabricated experience or skills are introduced.
+
+---
+
+## Why This Matters
+
+CareerPilot AI democratizes access to professional career coaching.
+
+Instead of spending hours:
+
+- searching multiple job boards,
+- manually comparing job descriptions,
+- rewriting resumes,
+- and creating generic cover letters,
+
+users receive intelligent, personalized career assistance within minutes.
+
+---
+
+# 2. Meaningful Use of Agents
+
+Traditional chatbots simply answer questions.
+
+CareerPilot AI uses autonomous AI agents.
+
+Each agent:
+
+- has a dedicated responsibility,
+- maintains conversation context,
+- utilizes external tools,
+- queries structured databases,
+- produces validated outputs,
+- and collaborates with downstream agents.
+
+This modular design improves:
+
+- accuracy
+- scalability
+- maintainability
+- token efficiency
+- response quality
+
+---
+
+# 3. Multi-Agent Architecture
+
+**Rubric Category:** YouTube & Writeup (10 pts)
+
+## Why Multiple Agents?
+
+A single LLM prompt cannot effectively solve this workflow because:
+
+- it cannot efficiently access databases,
+- loading every job description exceeds context limits,
+- massive prompts increase hallucinations,
+- costs grow significantly,
+- and maintainability becomes difficult.
+
+CareerPilot AI instead combines:
+
+- AI Agents
+- External Tools
+- Database Search
+- Persistent Memory
+
+into a coordinated pipeline.
+
+---
+
+## Architecture
 
 ```mermaid
-graph TD
-    A[PDF Resume Upload] -->|pypdf text extraction| B(Agent 1: ResumeParserAgent)
-    B -->|UserProfile Schema| C(Agent 2: JobMatcherAgent)
-    C -->|SQLite Jobs + Compatibility Analysis| D[Interactive Dashboard Board]
-    D -->|Click Card & Tailor Request| E(Agent 3: CoverLetterAgent)
-    E -->|Custom Letter Text| F[Copy to Clipboard]
+flowchart LR
+
+A[Resume PDF]
+--> B[ResumeParserAgent]
+
+B
+--> C[Structured User Profile]
+
+C
+--> D[JobMatcherAgent]
+
+D
+--> E[(SQLite Job Database)]
+
+D
+--> F[Remotive API]
+
+E --> G[Ranked Job Matches]
+F --> G
+
+G
+--> H[CoverLetterAgent]
+
+H
+--> I[Personalized Cover Letter]
+
+I
+--> J[CareerPilot Dashboard]
 ```
 
-1. **Agent 1: ResumeParserAgent** (`models/gemini-3.5-flash`):
-   * *Role*: Reads raw resume text, parses it, and maps it into a structured **`UserProfile`** Pydantic model.
-   * *Why*: Decoupled to focus strictly on structural data extraction.
-2. **Agent 2: JobMatcherAgent** (`models/gemini-3.5-flash`):
-   * *Role*: Compares the candidate profile against job descriptions, calculates compatibility scores, highlights matching/missing skills, and outlines resume advice. Output is mapped to the **`JobMatchResultsList`** schema.
-   * *Why*: Laser-focused on evaluation; handles database cross-referencing.
-3. **Agent 3: CoverLetterAgent** (`models/gemini-3.5-flash`):
-   * *Role*: Writes a persuasive, customized cover letter matching the candidate's actual credentials to the job role.
-   * *Why*: Dedicated strictly to creative, context-aligned editing and professional tone.
+---
+
+## ResumeParserAgent
+
+**Model:** Gemini 3.5 Flash
+
+### Responsibility
+
+Transforms an unstructured resume into a structured candidate profile.
+
+### Why?
+
+Separating resume parsing ensures downstream agents receive reliable, standardized information rather than inconsistent raw text.
+
+Output:
+
+- Skills
+- Experience
+- Education
+- Projects
+- Certifications
 
 ---
 
-## 3. Technical Implementation & Tool Use (Rubric Category: Implementation - 50 pts)
+## JobMatcherAgent
 
-### Technical Stack
-* **Agent Framework**: Google Agent Development Kit (ADK) — chosen for its native async workflow, session runners, and modular tool integrations.
-* **Backend**: FastAPI — high-performance asynchronous REST API.
-* **Database**: SQLite & SQLAlchemy (with `aiosqlite`) — provides zero-setup, async, file-based SQL persistence.
-* **Resiliency**: Tenacity — implements exponential backoff retries to automatically bypass transient Google API 503 (high demand) and 429 (rate limits).
-* **Data Validation**: Pydantic — guarantees type-safe inputs/outputs.
-* **Frontend**: HTML5 / CSS3 (Vanilla CSS with Glassmorphism variables) / Vanilla JavaScript (dynamic DOM bindings).
+**Model:** Gemini 3.5 Flash
 
-### Clever Database & API Tooling
-* **Composite Unique Constraint**: The `bookmarks` table utilizes a composite unique constraint on `(user_id, job_id)`. This enforces data cleanliness at the database layer, rejecting duplicate bookmark rows if a user double-clicks.
-* **Remotive Ingestion Integration**: The `fetch_and_store_jobs()` pipeline queries the Remotive API keylessly, scrubs HTML code from descriptions, parses tags, and commits new software development openings to SQLite without duplicates.
-* **SQL Query Filters**: The `/api/jobs` endpoint queries the SQLite database using SQL case-insensitive `icontains` filters for keywords, experience levels (Junior vs. Senior), location, and WFH/remote preferences.
+### Responsibility
 
-### Security & Secrets Management
-* **Zero Hardcoded Secrets**: All API keys (like `GEMINI_API_KEY`) are loaded dynamically using `python-dotenv`.
-* **Repository Safety**: The `.env` file containing private credentials and SQLite database files (`data/*.db`) are explicitly listed in `.gitignore` to prevent leakage.
+Matches candidate profiles against available job opportunities.
+
+Responsibilities include:
+
+- Database querying
+- Job retrieval
+- Compatibility scoring
+- Skill gap identification
+- Resume recommendations
+- Job ranking
+
+This agent is optimized purely for reasoning and evaluation.
 
 ---
 
-## 4. Setup, Installation & Documentation (Rubric Category: Documentation - 20 pts)
+## CoverLetterAgent
 
-### Prerequisites
-* Python 3.13+
-* Gemini API Key (obtained for free from Google AI Studio)
+**Model:** Gemini 3.5 Flash
 
-### Local Installation & Running
+### Responsibility
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/mxrci580/careerpilot-ai.git
-   cd careerpilot-ai
-   ```
+Generates professional, ATS-friendly cover letters using only verified resume information.
 
-2. **Set up a Python virtual environment**:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
+This ensures:
 
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+- personalization
+- factual accuracy
+- professional tone
+- zero hallucinated experience
 
-4. **Configure environment secrets**:
-   * Create a `.env` file in the root directory:
-     ```text
-     GEMINI_API_KEY=your_actual_gemini_api_key
-     ```
+---
 
-5. **Start the Unified Server**:
-   ```bash
-   python -m uvicorn app.main:app --reload
-   ```
+# 4. Technical Implementation
 
-6. **Open the Dashboard**:
-   * Open your browser and navigate to: **`http://127.0.0.1:8000/`**
-   * Upload a PDF resume to watch the multi-agent dashboard analyze, rank, and tailor application materials in real time!
+**Rubric Category:** Implementation (50 pts)
+
+## Technology Stack
+
+| Component | Technology |
+|------------|------------|
+| Agent Framework | Google Agent Development Kit (ADK) |
+| LLM | Gemini 3.5 Flash |
+| Backend | FastAPI |
+| Database | SQLite |
+| ORM | SQLAlchemy + aiosqlite |
+| Validation | Pydantic |
+| Retry Strategy | Tenacity |
+| Frontend | HTML5 + CSS3 + Vanilla JavaScript |
+
+---
+
+## Intelligent Data Pipeline
+
+CareerPilot AI follows a provider-based architecture.
+
+```
+Resume
+
+↓
+
+ResumeParserAgent
+
+↓
+
+Structured Profile
+
+↓
+
+JobMatcherAgent
+
+↓
+
+SQLite + Remotive
+
+↓
+
+Ranked Jobs
+
+↓
+
+CoverLetterAgent
+
+↓
+
+Personalized Career Assistance
+```
+
+This separation keeps each agent focused on a single responsibility while improving scalability and reducing LLM token usage.
+
+---
+
+## Database Design
+
+### Composite Unique Constraints
+
+Bookmarks use:
+
+```
+(user_id, job_id)
+```
+
+preventing duplicate bookmarks at the database level.
+
+---
+
+### Intelligent Job Retrieval
+
+CareerPilot AI:
+
+- fetches jobs from Remotive,
+- cleans HTML,
+- normalizes metadata,
+- parses skills,
+- removes duplicates,
+- stores jobs asynchronously.
+
+---
+
+### Smart Job Filtering
+
+The search engine supports:
+
+- keywords
+- locations
+- remote jobs
+- experience level
+- case-insensitive matching
+
+---
+
+## Security
+
+### Zero Hardcoded Secrets
+
+Sensitive credentials are managed using:
+
+```
+python-dotenv
+```
+
+Example:
+
+```env
+GEMINI_API_KEY=your_api_key
+```
+
+---
+
+### Repository Safety
+
+Sensitive files excluded through `.gitignore`:
+
+```
+.env
+
+data/*.db
+```
+
+---
+
+# 5. Setup & Installation
+
+**Rubric Category:** Documentation (20 pts)
+
+## Prerequisites
+
+- Python 3.13+
+- Gemini API Key
+
+---
+
+## Clone Repository
+
+```bash
+git clone https://github.com/mxrci580/careerpilot-ai.git
+
+cd careerpilot-ai
+```
+
+---
+
+## Create Virtual Environment
+
+```bash
+python3 -m venv .venv
+
+source .venv/bin/activate
+```
+
+---
+
+## Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Configure Environment
+
+Create a `.env` file.
+
+```env
+GEMINI_API_KEY=your_actual_api_key
+```
+
+---
+
+## Run
+
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+---
+
+## Open
+
+```
+http://127.0.0.1:8000/
+```
+
+Upload your resume and let CareerPilot AI:
+
+- 📄 Parse your resume
+- 🌐 Aggregate jobs from multiple sources
+- 🧠 Understand intelligent search queries
+- 🎯 Rank opportunities
+- 📊 Identify skill gaps
+- ✍️ Generate personalized cover letters
+
+—all through a coordinated multi-agent AI system designed to make professional career guidance accessible to everyone.
+
+---
+
+# Why CareerPilot AI?
+
+Unlike traditional job portals that simply list vacancies, CareerPilot AI acts as an intelligent career companion.
+
+It doesn't just help users **find jobs**—it helps them **understand**, **prepare**, and **apply** more effectively.
+
+By combining unified job aggregation, intelligent query understanding, multi-agent reasoning, resume intelligence, skill-gap analysis, and personalized application generation, CareerPilot AI transforms a fragmented and time-consuming job search into a guided, AI-powered career journey.
